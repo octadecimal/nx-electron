@@ -70,7 +70,9 @@ function findAllNpmDeps(
 
   seen.add(projectName);
 
-  const node = graph.nodes[projectName];
+  // TODO: Dependencies are no longer in `graph.nodes` but instead `graph.externalNodes`
+  // However, `externalNodes` is not exposed as a type on the type `ProjectGraph`.
+  const node = graph.nodes[projectName] ? graph.nodes[projectName] : graph.externalNodes[projectName];
 
   if (node.type === 'npm') {
     list[node.data.packageName] = node.data.version;
