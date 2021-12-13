@@ -1,0 +1,51 @@
+diff --git a/node_modules/nx-electron/src/executors/build/executor.js b/node_modules/nx-electron/src/executors/build/executor.js
+index bd8724f..bbccc52 100644
+--- a/node_modules/nx-electron/src/executors/build/executor.js
++++ b/node_modules/nx-electron/src/executors/build/executor.js
+@@ -5,7 +5,7 @@ const tslib_1 = require("tslib");
+ const path_1 = require("path");
+ const operators_1 = require("rxjs/operators");
+ const rxjs_for_await_1 = require("rxjs-for-await");
+-const run_webpack_1 = require("@nrwl/workspace/src/utilities/run-webpack");
++const run_webpack_1 = require("../../utils/run-webpack");
+ const project_graph_1 = require("@nrwl/workspace/src/core/project-graph");
+ const buildable_libs_utils_1 = require("@nrwl/workspace/src/utilities/buildable-libs-utils");
+ const electron_config_1 = require("../../utils/electron.config");
+@@ -39,8 +39,8 @@ function executor(rawOptions, context) {
+             configuration: context.configurationName,
+         });
+     }
+-    config.entry['preload'] = path_1.join(normalizedOptions.sourceRoot, 'app/api/preload.ts');
+-    return rxjs_for_await_1.eachValueFrom(run_webpack_1.runWebpack(config, webpack_1.default).pipe(operators_1.tap((stats) => {
++    // config.entry['preload'] = path_1.join(normalizedOptions.sourceRoot, 'app/api/preload.ts');
++    return rxjs_for_await_1.eachValueFrom(run_webpack_1.runWebpack(config).pipe(operators_1.tap((stats) => {
+         console.info(stats.toString(config.stats));
+     }), operators_1.map((stats) => {
+         return {
+diff --git a/node_modules/nx-electron/src/utils/generate-package-json.js b/node_modules/nx-electron/src/utils/generate-package-json.js
+index 931e1da..37a8cec 100644
+--- a/node_modules/nx-electron/src/utils/generate-package-json.js
++++ b/node_modules/nx-electron/src/utils/generate-package-json.js
+@@ -56,7 +56,8 @@ function findAllNpmDeps(projectName, graph, list = {}, seen = new Set()) {
+         return list;
+     }
+     seen.add(projectName);
+-    const node = graph.nodes[projectName];
++    const node = graph.nodes[projectName] ? graph.nodes[projectName] : graph.externalNodes[projectName];
++
+     if (node.type === 'npm') {
+         list[node.data.packageName] = node.data.version;
+     }
+diff --git a/node_modules/nx-electron/src/utils/run-webpack.js b/node_modules/nx-electron/src/utils/run-webpack.js
+index 345b19e..ba6dc6e 100644
+--- a/node_modules/nx-electron/src/utils/run-webpack.js
++++ b/node_modules/nx-electron/src/utils/run-webpack.js
+@@ -10,6 +10,8 @@ function runWebpack(config) {
+         // We manually call `.watch` or `.run` later so this option isn't needed here.
+         const { watch } = config, normalizedConfig = tslib_1.__rest(config, ["watch"]);
+         const webpackCompiler = webpack_1.default(normalizedConfig);
++
++
+         const callback = (err, stats) => {
+             if (err) {
+                 subscriber.error(err);
